@@ -38,7 +38,7 @@ const char *vertexShader = STRINGIFY(
     // calculate window-space point size
     vec3 posEye = vec3(gl_ModelViewMatrix * vec4(gl_Vertex.xyz, 1.0));
     float dist = length(posEye);
-    gl_PointSize = pointRadius *(pointScale / dist);
+    gl_PointSize = pointRadius *(pointScale / dist) / 10;
 
     gl_TexCoord[0] = gl_MultiTexCoord0;
     gl_Position = gl_ModelViewProjectionMatrix * vec4(gl_Vertex.xyz, 1.0);

@@ -251,21 +251,23 @@ __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
     // calculate relative position
     float3 relPos = posB - posA;
 
-    float dist = length(relPos)* 1;
+    float dist = length(relPos) * 200;
     float dist2 = dist * dist;
     float dist4 = dist2 * dist2;
 
     float3 force = make_float3(0.0f);
 
-    force += 0.001 * (attraction + 0.0001) * relPos / (dist + 0.001);
-    float force_mag = 0.5f / (dist4 + 0.05f) - 1.8f / (dist4 + 0.44f);
-    force *= -1 * force_mag;
+    force += 0.001 * (attraction + 0.1) * relPos / (dist + 0.001);
+    float force_mag = 1.2f / (dist4 + 0.05f) - 2.9f / (dist4 + 0.44f);
+
+    //float force_mag = 8 / (dist2 + 0.5) - 5 / ((-1.1 * dist + 0.5) * (-1.1 * dist + 0.5) + 0.5);
+    force *= 1 * force_mag;
     //force -= 0.0000001f * relPos / length(relPos);// *-1 * force_mag;
 
     force.z = 0.0f;
-    if (length(relPos) > 0.5) {
+    /*if (length(relPos) > 0.5) {
         force *= 1;
-    }
+    }*/
     return force;
 }
 
@@ -322,8 +324,8 @@ __global__ void collideD(
   float3 force = make_float3(0.0f);
 
   for (int z = -1; z <= 1; z++) {
-    for (int y = -1; y <= 1; y++) {
-      for (int x = -1; x <= 1; x++) {
+    for (int y = -2; y <= 2; y++) {
+      for (int x = -2; x <= 2; x++) {
         int3 neighbourPos = gridPos + make_int3(x, y, z);
         force += collideCell(neighbourPos, index, pos, vel, oldPos, oldVel,
                              cellStart, cellEnd);

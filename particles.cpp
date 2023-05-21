@@ -72,7 +72,7 @@
 #define THRESHOLD 0.30f
 
 #define GRID_SIZE 256
-#define NUM_PARTICLES 16384 / 4
+#define NUM_PARTICLES 16384 * 1
 
 const uint width = 640, height = 480;
 
@@ -94,7 +94,7 @@ bool wireframe = false;
 bool demoMode = false;
 int idleCounter = 0;
 int demoCounter = 0;
-const int idleDelay = 2000;
+const int idleDelay = 20000000;
 
 enum { M_VIEW = 0, M_MOVE };
 
@@ -105,7 +105,7 @@ int numIterations = 0;  // run until exit
 // simulation parameters
 float timestep = 0.5f;
 float damping = 1.0f;
-float gravity = 0.0003f;
+float gravity = 0.0000f;
 int iterations = 1;
 int ballr = 10;
 
@@ -145,7 +145,7 @@ extern "C" void copyArrayFromDevice(void *host, const void *device,
 // initialize particle system
 void initParticleSystem(int numParticles, uint3 gridSize, bool bUseOpenGL) {
   psystem = new ParticleSystem(numParticles, gridSize, bUseOpenGL);
-  psystem->reset(ParticleSystem::CONFIG_GRID);
+  psystem->reset(ParticleSystem::CONFIG_RANDOM);
 
   if (bUseOpenGL) {
     renderer = new ParticleRenderer;
@@ -627,7 +627,7 @@ void initParams() {
     params->AddParam(new Param<float>("collide shear", collideShear, 0.0f, 0.1f,
                                       0.001f, &collideShear));
     params->AddParam(new Param<float>("collide attract", collideAttraction,
-                                      0.0f, 0.1f, 0.001f, &collideAttraction));
+                                      0.0f, 0.1f, 0.1f, &collideAttraction));
   }
 }
 
