@@ -150,7 +150,9 @@ ParticleSystem::_initialize(int numParticles)
     if (m_bUseOpenGL)
     {
         m_posVbo = createVBO(memSize);
+        m_colorVbo = createVBO(memSize);
         registerGLBufferObject(m_posVbo, &m_cuda_posvbo_resource);
+        registerGLBufferObject(m_colorVbo, &m_cuda_colorvbo_resource);
     }
     else
     {
@@ -248,10 +250,12 @@ ParticleSystem::update(float deltaTime)
     assert(m_bInitialized);
 
     float *dPos;
+    float* dColor;
 
     if (m_bUseOpenGL)
     {
         dPos = (float *) mapGLBufferObject(&m_cuda_posvbo_resource);
+        dColor = (float*)mapGLBufferObject(&m_cuda_colorvbo_resource);
     }
     else
     {
@@ -295,7 +299,7 @@ ParticleSystem::update(float deltaTime)
     // process collisions
     collide(
         m_dVel,
-        m_dColor,
+        dColor,
         m_dSortedPos,
         m_dSortedVel,
         m_dGridParticleIndex,
@@ -308,6 +312,7 @@ ParticleSystem::update(float deltaTime)
     if (m_bUseOpenGL)
     {
         unmapGLBufferObject(m_cuda_posvbo_resource);
+        unmapGLBufferObject(m_cuda_colorvbo_resource);
     }
 }
 

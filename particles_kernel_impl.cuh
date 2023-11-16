@@ -365,6 +365,15 @@ __device__ float3 collideCell(int3 gridPos, uint index, float3 pos, float3 vel,
   return force;
 }
 
+__device__ float4 velocityToColor(float3 vel) {
+    if (length(vel) > 0.001) {
+        return make_float4(vel.x*vel.x*1000*1000, 1.0, 0.0, 1.0);
+    }
+    else {
+        return make_float4(0.0, 0.5, 0.0, 1.0);
+    }
+}
+
 __global__ void collideD(
     float4 *newVel,           // output: new velocity
     float4 *newColor,         // output: new color
@@ -407,7 +416,7 @@ __global__ void collideD(
   // write new velocity back to original unsorted location
   uint originalIndex = gridParticleIndex[index];
   newVel[originalIndex] = make_float4(vel + force, 0.0f);
-  newColor[originalIndex] = make_float4(0.5, 0.5, 1.0, 1.0);
+  newColor[originalIndex] = velocityToColor(vel);
 }
 
 #endif
