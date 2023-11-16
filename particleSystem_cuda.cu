@@ -177,7 +177,7 @@ void reorderDataAndFindCellStart(uint *cellStart, uint *cellEnd,
   getLastCudaError("Kernel execution failed: reorderDataAndFindCellStartD");
 }
 
-void collide(float *newVel, float *sortedPos, float *sortedVel,
+void collide(float *newVel, float *newColor, float *sortedPos, float *sortedVel,
              uint *gridParticleIndex, uint *cellStart, uint *cellEnd,
              uint numParticles, uint numCells) {
   // thread per particle
@@ -185,7 +185,7 @@ void collide(float *newVel, float *sortedPos, float *sortedVel,
   computeGridSize(numParticles, 64, numBlocks, numThreads);
 
   // execute the kernel
-  collideD<<<numBlocks, numThreads>>>((float4 *)newVel, (float4 *)sortedPos,
+  collideD<<<numBlocks, numThreads>>>((float4 *)newVel, (float4 *) newColor, (float4 *)sortedPos,
                                       (float4 *)sortedVel, gridParticleIndex,
                                       cellStart, cellEnd, numParticles);
 

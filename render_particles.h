@@ -35,7 +35,7 @@ class ParticleRenderer {
 
   void setPositions(float *pos, int numParticles);
   void setVertexBuffer(unsigned int vbo, int numParticles);
-  void setColorBuffer(unsigned int vbo) { m_colorVBO = vbo; }
+  void setColorBuffer(unsigned int vbo) { m_colorVbo = vbo; }
 
   enum DisplayMode { PARTICLE_POINTS, PARTICLE_SPHERES, PARTICLE_NUM_MODES };
 
@@ -57,6 +57,7 @@ class ParticleRenderer {
 
  protected:  // data
   float *m_pos;
+  float *m_color;
   int m_numParticles;
 
   float m_pointSize;
@@ -67,7 +68,7 @@ class ParticleRenderer {
   GLuint m_program;
 
   GLuint m_vbo;
-  GLuint m_colorVBO;
+  GLuint m_colorVbo;
 };
 
 #endif  //__ RENDER_PARTICLES__

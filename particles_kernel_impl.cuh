@@ -367,6 +367,7 @@ __device__ float3 collideCell(int3 gridPos, uint index, float3 pos, float3 vel,
 
 __global__ void collideD(
     float4 *newVel,           // output: new velocity
+    float4 *newColor,         // output: new color
     float4 *oldPos,           // input: sorted positions
     float4 *oldVel,           // input: sorted velocities
     uint *gridParticleIndex,  // input: sorted particle indices
@@ -399,13 +400,14 @@ __global__ void collideD(
   }
 
   // collide with cursor sphere
-  force += collideSpheres(pos, params.colliderPos, vel,
-                          make_float3(0.0f, 0.0f, 0.0f), params.particleRadius,
-                          params.colliderRadius, 0.0f);
+  //force += collideSpheres(pos, params.colliderPos, vel,
+  //                        make_float3(0.0f, 0.0f, 0.0f), params.particleRadius,
+  //                        params.colliderRadius, 0.0f);
 
   // write new velocity back to original unsorted location
   uint originalIndex = gridParticleIndex[index];
   newVel[originalIndex] = make_float4(vel + force, 0.0f);
+  newColor[originalIndex] = make_float4(0.5, 0.5, 1.0, 1.0);
 }
 
 #endif

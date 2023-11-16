@@ -44,6 +44,7 @@ ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenG
     m_hVel(0),
     m_dPos(0),
     m_dVel(0),
+    m_dColor(0),
     m_gridSize(gridSize),
     m_timer(NULL),
     m_solverIterations(1)
@@ -157,6 +158,7 @@ ParticleSystem::_initialize(int numParticles)
     }
 
     allocateArray((void **)&m_dVel, memSize);
+    allocateArray((void**)&m_dColor, memSize);
 
     allocateArray((void **)&m_dSortedPos, memSize);
     allocateArray((void **)&m_dSortedVel, memSize);
@@ -169,11 +171,11 @@ ParticleSystem::_initialize(int numParticles)
 
     if (m_bUseOpenGL)
     {
-        m_colorVBO = createVBO(m_numParticles*4*sizeof(float));
-        registerGLBufferObject(m_colorVBO, &m_cuda_colorvbo_resource);
+        m_colorVbo = createVBO(m_numParticles*4*sizeof(float));
+        registerGLBufferObject(m_colorVbo, &m_cuda_colorvbo_resource);
 
         // fill color buffer
-        glBindBuffer(GL_ARRAY_BUFFER, m_colorVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, m_colorVbo);
         float *data = (float *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
         float *ptr = data;
 
@@ -216,6 +218,7 @@ ParticleSystem::_finalize()
     delete [] m_hCellEnd;
 
     freeArray(m_dVel);
+    freeArray(m_dColor);
     freeArray(m_dSortedPos);
     freeArray(m_dSortedVel);
 
@@ -229,7 +232,7 @@ ParticleSystem::_finalize()
         unregisterGLBufferObject(m_cuda_colorvbo_resource);
         unregisterGLBufferObject(m_cuda_posvbo_resource);
         glDeleteBuffers(1, (const GLuint *)&m_posVbo);
-        glDeleteBuffers(1, (const GLuint *)&m_colorVBO);
+        glDeleteBuffers(1, (const GLuint *)&m_colorVbo);
     }
     else
     {
@@ -292,6 +295,7 @@ ParticleSystem::update(float deltaTime)
     // process collisions
     collide(
         m_dVel,
+        m_dColor,
         m_dSortedPos,
         m_dSortedVel,
         m_dGridParticleIndex,

@@ -58,7 +58,7 @@ void reorderDataAndFindCellStart(uint *cellStart, uint *cellEnd,
                                  float *oldVel, uint numParticles,
                                  uint numCells);
 
-void collide(float *newVel, float *sortedPos, float *sortedVel,
+void collide(float *newVel, float *newColor, float *sortedPos, float *sortedVel,
              uint *gridParticleIndex, uint *cellStart, uint *cellEnd,
              uint numParticles, uint numCells);
 

@@ -57,7 +57,7 @@ class ParticleSystem {
   int getNumParticles() const { return m_numParticles; }
 
   unsigned int getCurrentReadBuffer() const { return m_posVbo; }
-  unsigned int getColorBuffer() const { return m_colorVBO; }
+  unsigned int getColorBuffer() const { return m_colorVbo; }
 
   void *getCudaPosVBO() const { return (void *)m_cudaPosVBO; }
   void *getCudaColorVBO() const { return (void *)m_cudaColorVBO; }
@@ -110,6 +110,7 @@ class ParticleSystem {
   // GPU data
   float *m_dPos;
   float *m_dVel;
+  float* m_dColor;
 
   float *m_dSortedPos;
   float *m_dSortedVel;
@@ -123,7 +124,7 @@ class ParticleSystem {
   uint m_gridSortBits;
 
   uint m_posVbo;    // vertex buffer object for particle positions
-  uint m_colorVBO;  // vertex buffer object for colors
+  uint m_colorVbo;  // vertex buffer object for colors
 
   float *m_cudaPosVBO;    // these are the CUDA deviceMem Pos
   float *m_cudaColorVBO;  // these are the CUDA deviceMem Color
