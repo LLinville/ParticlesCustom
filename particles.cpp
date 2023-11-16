@@ -71,7 +71,7 @@
 #define MAX_EPSILON_ERROR 5.00f
 #define THRESHOLD 0.30f
 
-#define GRID_SIZE 256
+#define GRID_SIZE 16
 #define NUM_PARTICLES 16384 * 1
 
 const uint width = 640, height = 480;
@@ -104,7 +104,7 @@ int numIterations = 0;  // run until exit
 
 // simulation parameters
 float timestep = 0.5f;
-float damping = 1.0f;
+float damping = 1.00f;
 float gravity = 0.0000f;
 int iterations = 1;
 int ballr = 10;
@@ -202,6 +202,7 @@ void runBenchmark(int iterations, char *exec_path) {
 
   for (int i = 0; i < iterations; ++i) {
     psystem->update(timestep);
+    printf("Finished iteration %d\n", i);
   }
 
   cudaDeviceSynchronize();
@@ -262,8 +263,10 @@ void display() {
     psystem->setCollideDamping(collideDamping);
     psystem->setCollideShear(collideShear);
     psystem->setCollideAttraction(collideAttraction);
-
-    psystem->update(timestep);
+       
+    for (int i = 0; i < 1; i++) {
+        psystem->update(timestep);
+    }
 
     if (renderer) {
       renderer->setVertexBuffer(psystem->getCurrentReadBuffer(),
@@ -682,15 +685,15 @@ int main(int argc, char **argv) {
     }
   }
 
-  gridSize.x =  gridDim;
-  gridSize.y =  gridDim;
+  gridSize.x =  32;
+  gridSize.y =  32;
   gridSize.z =  1;
   printf("grid: %d x %d x %d = %d cells\n", gridSize.x, gridSize.y, gridSize.z,
          gridSize.x * gridSize.y * gridSize.z);
   printf("particles: %d\n", numParticles);
 
   bool benchmark =
-      checkCmdLineFlag(argc, (const char **)argv, "benchmark") != 0;
+      checkCmdLineFlag(argc, (const char **)argv, "benchmark") != 0 || false;
 
   if (checkCmdLineFlag(argc, (const char **)argv, "i")) {
     numIterations = getCmdLineArgumentInt(argc, (const char **)argv, "i");
@@ -717,7 +720,7 @@ int main(int argc, char **argv) {
 
   if (benchmark || g_refFile) {
     if (numIterations <= 0) {
-      numIterations = 300;
+      numIterations = 200;
     }
 
     runBenchmark(numIterations, argv[0]);

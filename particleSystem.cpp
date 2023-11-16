@@ -63,7 +63,8 @@ ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenG
     m_params.colliderRadius = 0.2f;
 
     m_params.worldOrigin = make_float3(-1.0f, -1.0f, -1.0f);
-    //    m_params.cellSize = make_float3(worldSize.x / m_gridSize.x, worldSize.y / m_gridSize.y, worldSize.z / m_gridSize.z);
+    float3 worldSize = make_float3(2.0, 2.0, 2.0);
+    m_params.cellSize = make_float3(worldSize.x / m_gridSize.x, worldSize.y / m_gridSize.y, worldSize.z / m_gridSize.z);
     float cellSize = m_params.particleRadius * 2.0f;  // cell size equal to particle diameter
     m_params.cellSize = make_float3(cellSize, cellSize, cellSize);
 
@@ -71,7 +72,7 @@ ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenG
     m_params.damping = 0.02f;
     m_params.shear = 0.1f;
     m_params.attraction = 0.0f;
-    m_params.boundaryDamping = -0.5f;
+    m_params.boundaryDamping = -0.9999f;
 
     m_params.gravity = make_float3(0.0f, -0.0003f, 0.0f);
     m_params.globalDamping = 1.0f;
@@ -459,7 +460,7 @@ ParticleSystem::reset(ParticleConfig config)
                     m_hPos[p++] = 2 * (point[0] - 0.5f);
                     m_hPos[p++] = 2 * (point[1] - 0.5f);
                     m_hPos[p++] = 0.0f; // 2 * (point[2] - 0.5f);
-                    m_hPos[p++] = 1.0f; // radius
+                    m_hPos[p++] = 3.0f; // radius
                     m_hVel[v++] = 0.0f;
                     m_hVel[v++] = 0.0f;
                     m_hVel[v++] = 0.0f;

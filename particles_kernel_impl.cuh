@@ -66,37 +66,44 @@ struct integrate_functor {
 // set this to zero to disable collisions with cube sides
 #if 1
 
-    if (pos.x > 1.0f - params.particleRadius) {
-      pos.x = 1.0f - params.particleRadius;
-      vel.x *= params.boundaryDamping;
+    float x_bound = 1.05f;
+    float y_bound = x_bound;
+    float boundaryForce = 0.001f;
+    if (pos.x > 1.0f * x_bound - params.particleRadius) {
+      //pos.x = 1.0f * x_bound - params.particleRadius;
+      //vel.x *= params.boundaryDamping;
+      vel.x -= boundaryForce;
     }
 
-    if (pos.x < -1.0f + params.particleRadius) {
-      pos.x = -1.0f + params.particleRadius;
-      vel.x *= params.boundaryDamping;
+    if (pos.x < -1.0f * x_bound + params.particleRadius) {
+      //pos.x = -1.0f * x_bound + params.particleRadius;
+      //vel.x *= params.boundaryDamping;
+        vel.x += boundaryForce;
     }
 
-    if (pos.y > 1.0f - params.particleRadius) {
-      pos.y = 1.0f - params.particleRadius;
-      vel.y *= params.boundaryDamping;
+    if (pos.y > 1.0f * y_bound - params.particleRadius) {
+      //pos.y = 1.0f - params.particleRadius;
+      //vel.y *= params.boundaryDamping;
+      vel.y -= boundaryForce;
     }
 
-    if (pos.z > 1.0f - params.particleRadius) {
-      pos.z = 1.0f - params.particleRadius;
-      vel.z *= params.boundaryDamping;
-    }
+    //if (pos.z > 1.0f - params.particleRadius) {
+    //  pos.z = 1.0f - params.particleRadius;
+    //  vel.z *= params.boundaryDamping;
+    //}
 
-    if (pos.z < -1.0f + params.particleRadius) {
-      pos.z = -1.0f + params.particleRadius;
-      vel.z *= params.boundaryDamping;
+    //if (pos.z < -1.0f + params.particleRadius) {
+    //  pos.z = -1.0f + params.particleRadius;
+    //  vel.z *= params.boundaryDamping;
+    //}
+    if (pos.y < -1.0f * y_bound + params.particleRadius) {
+        //pos.y = -1.0f + params.particleRadius;
+        //vel.y *= params.boundaryDamping;
+        vel.y += boundaryForce;
     }
-
 #endif
 
-    if (pos.y < -1.0f + params.particleRadius) {
-      pos.y = -1.0f + params.particleRadius;
-      vel.y *= params.boundaryDamping;
-    }
+    
 
     // store new position and velocity
     thrust::get<0>(t) = make_float4(pos, posData.w);
@@ -242,6 +249,39 @@ __global__ void reorderDataAndFindCellStartD(
 //  return force;
 //}
 
+__device__ float forceMag_lj(float dist) {
+    float epsilon = 0.001f;
+    dist += epsilon;
+    float dist2 = dist * dist;
+    float dist4 = dist2 * dist2;
+    float dist8 = dist4 * dist4;
+
+    return 1.0f / (dist8 * dist4) - 1.0f / (dist4 * dist2);
+}
+
+__device__ float forceMag_custom_peak(float dist) {
+    float a = 0.5;
+    float b = 1;
+    float c = 4;
+    float d = 1;
+    float m = -0.5;
+    float n = -4;
+    float c2 = c * c;
+    float c4 = c2 * c2;
+    float d2 = d * d;
+    float d4 = d2 * d2;
+    float d8 = d4 * d4;
+
+    float dist2 = dist * dist;
+    float dist4 = dist2 * dist2;
+    float dist8 = dist4 * dist4;
+
+    // https://www.desmos.com/calculator/84nyjazqqw
+    float potential = m / (a + dist4 / c4) - n / (b + dist4 * dist4 / (d4 * d4));
+    float force_mag = 4 * m * dist2 * dist * (d4 - 2 * dist4) / d8;
+    return 1.0f * force_mag;
+}
+
 // collide two spheres using DEM method
 __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
     float3 velB, float radiusA, float radiusB,
@@ -251,23 +291,45 @@ __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
     // calculate relative position
     float3 relPos = posB - posA;
 
-    float dist = length(relPos) * 200;
-    float dist2 = dist * dist;
-    float dist4 = dist2 * dist2;
+    float dist = length(relPos) * 0.001;
+    //float dist2 = dist * dist;
+    //float dist4 = dist2 * dist2;
+    //float dist5 = dist4 * dist;
 
     float3 force = make_float3(0.0f);
 
-    force += 0.001 * (attraction + 0.1) * relPos / (dist + 0.001);
-    float force_mag = 1.2f / (dist4 + 0.05f) - 2.9f / (dist4 + 0.44f);
+    float a = 0.4;
+    float b = 2.8;
+    float c = 5;
+    float d = 5;
+    float g = 0.05;
+    float h = 0.44;
+    float m = 1;
+    float n = 1;
+    
+    /*float potential = a / (dist5 + g) - b / (dist5 + h);
+    float force_mag = (b * d * dist4) / ((dist5 + h) * (dist5 + h)) -
+                      (a * c * dist4) / ((dist5 + g) * (dist5 + g));*/
+
+    //float force_mag = forceMag_lj(dist);
+    float force_mag = 0;// forceMag_custom_peak(dist);
+    if (dist < attraction * 0.001) {
+        force_mag = -0.01;
+    }
+    else {
+        force_mag = 0;
+    }
+
+    //force += 0.1 * (attraction + 0.1) * relPos / (dist + 0.001);
+    //float force_mag = 1.2f / (dist4 + 0.05f) - 2.9f / (dist4 + 0.44f);
 
     //float force_mag = 8 / (dist2 + 0.5) - 5 / ((-1.1 * dist + 0.5) * (-1.1 * dist + 0.5) + 0.5);
-    force *= 1 * force_mag;
+    //float force_mag = -1 * 0.4
+    force += relPos;
+    force *= 0.95 * force_mag;
     //force -= 0.0000001f * relPos / length(relPos);// *-1 * force_mag;
 
     force.z = 0.0f;
-    /*if (length(relPos) > 0.5) {
-        force *= 1;
-    }*/
     return force;
 }
 
@@ -322,10 +384,13 @@ __global__ void collideD(
 
   // examine neighbouring cells
   float3 force = make_float3(0.0f);
-
+  int neighborDist = 1;
   for (int z = -1; z <= 1; z++) {
-    for (int y = -2; y <= 2; y++) {
-      for (int x = -2; x <= 2; x++) {
+    for (int y = -1* neighborDist; y <= neighborDist; y++) {
+      for (int x = -1 * neighborDist; x <= neighborDist; x++) {
+          if (gridPos.x == 10 || gridPos.y == 5) {
+              continue;
+          }
         int3 neighbourPos = gridPos + make_int3(x, y, z);
         force += collideCell(neighbourPos, index, pos, vel, oldPos, oldVel,
                              cellStart, cellEnd);
