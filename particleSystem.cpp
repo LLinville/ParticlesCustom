@@ -65,8 +65,8 @@ ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenG
     m_params.worldOrigin = make_float3(-1.0f, -1.0f, -1.0f);
     float3 worldSize = make_float3(2.0, 2.0, 2.0);
     m_params.cellSize = make_float3(worldSize.x / m_gridSize.x, worldSize.y / m_gridSize.y, worldSize.z / m_gridSize.z);
-    float cellSize = m_params.particleRadius * 2.0f;  // cell size equal to particle diameter
-    m_params.cellSize = make_float3(cellSize, cellSize, cellSize);
+    //float cellSize = m_params.particleRadius * 2.0f;  // cell size equal to particle diameter
+    //m_params.cellSize = make_float3(cellSize, cellSize, cellSize);
 
     m_params.spring = 0.5f;
     m_params.damping = 0.02f;

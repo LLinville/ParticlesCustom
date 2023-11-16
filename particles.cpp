@@ -71,8 +71,8 @@
 #define MAX_EPSILON_ERROR 5.00f
 #define THRESHOLD 0.30f
 
-#define GRID_SIZE 16
-#define NUM_PARTICLES 16384 * 1
+#define GRID_SIZE 512
+#define NUM_PARTICLES 16384 * 32
 
 const uint width = 640, height = 480;
 
@@ -685,8 +685,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  gridSize.x =  32;
-  gridSize.y =  32;
+  gridSize.x =  GRID_SIZE;
+  gridSize.y =  GRID_SIZE;
   gridSize.z =  1;
   printf("grid: %d x %d x %d = %d cells\n", gridSize.x, gridSize.y, gridSize.z,
          gridSize.x * gridSize.y * gridSize.z);
