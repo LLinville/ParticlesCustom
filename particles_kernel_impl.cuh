@@ -66,7 +66,7 @@ struct integrate_functor {
 // set this to zero to disable collisions with cube sides
 #if 1
 
-    float x_bound = 1.05f;
+    float x_bound = 0.9f;
     float y_bound = x_bound;
     float boundaryForce = 0.001f;
     if (pos.x > 1.0f * x_bound - params.particleRadius) {
@@ -250,7 +250,7 @@ __global__ void reorderDataAndFindCellStartD(
 //}
 
 __device__ float forceMag_lj(float dist) {
-    float epsilon = 0.001f;
+    float epsilon = 0.00000001f;
     dist += epsilon;
     float dist2 = dist * dist;
     float dist4 = dist2 * dist2;
@@ -259,11 +259,44 @@ __device__ float forceMag_lj(float dist) {
     return 1.0f / (dist8 * dist4) - 1.0f / (dist4 * dist2);
 }
 
+
+//https://www.desmos.com/calculator/vjgbhagq9c
+__device__ float forceMag_lj_from_potential(float dist) {
+    /*float a = 0.1;
+    float b = 0.79;
+    float c = 4;
+    float d = 4;
+    float f = 1.2;
+    float g = 3.7;
+    float cf = c * f;
+    float dg = d * g;*/
+    const float a = 0.1;
+    const float b = 0.21;
+    const float c = 4;
+    const float d = 4;
+    const float f = 1.1;
+    const float g = 1.8;
+    const float cf = c * f;
+    const float dg = d * g;
+
+    float dist2 = dist * dist;
+    float dist4 = dist2 * dist2;
+    float dist8 = dist4 * dist4;
+    float a_dist8 = dist8 + a;
+    float a_dist8_2 = a_dist8 * a_dist8;
+    float b_dist8 = dist8 + b;
+    float b_dist8_2 = b_dist8 * b_dist8;
+
+
+    return ( (dg * dist8 / b_dist8_2) - (cf * dist8 / a_dist8_2) ) / dist;
+}
+
+
 __device__ float forceMag_custom_peak(float dist) {
-    float a = 0.5;
+    float a = 0.1;
     float b = 1;
     float c = 4;
-    float d = 1;
+    float d = 4;
     float m = -0.5;
     float n = -4;
     float c2 = c * c;
@@ -291,43 +324,44 @@ __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
     // calculate relative position
     float3 relPos = posB - posA;
 
-    float dist = length(relPos) * 0.001;
+    float dist = length(relPos) * 0.1;
     //float dist2 = dist * dist;
     //float dist4 = dist2 * dist2;
     //float dist5 = dist4 * dist;
 
     float3 force = make_float3(0.0f);
 
-    float a = 0.4;
+    /*float a = 0.4;
     float b = 2.8;
     float c = 5;
     float d = 5;
     float g = 0.05;
     float h = 0.44;
     float m = 1;
-    float n = 1;
+    float n = 1;*/
     
     /*float potential = a / (dist5 + g) - b / (dist5 + h);
     float force_mag = (b * d * dist4) / ((dist5 + h) * (dist5 + h)) -
                       (a * c * dist4) / ((dist5 + g) * (dist5 + g));*/
 
     //float force_mag = forceMag_lj(dist);
-    float force_mag = 0;// forceMag_custom_peak(dist);
-    if (dist < attraction * 0.001) {
-        force_mag = -0.01;
-    }
-    else {
-        force_mag = 0;
-    }
+    float force_mag = forceMag_lj_from_potential(dist * 400);
+    //if (dist < attraction * 0.001) {
+    //    force_mag = -0.01;
+    //}
+    //else {
+    //    force_mag = 0;
+    //}
 
     //force += 0.1 * (attraction + 0.1) * relPos / (dist + 0.001);
     //float force_mag = 1.2f / (dist4 + 0.05f) - 2.9f / (dist4 + 0.44f);
 
     //float force_mag = 8 / (dist2 + 0.5) - 5 / ((-1.1 * dist + 0.5) * (-1.1 * dist + 0.5) + 0.5);
     //float force_mag = -1 * 0.4
-    force += relPos;
-    force *= 0.95 * force_mag;
+    force += relPos / length(relPos);
+    force *= 0.1 * attraction * force_mag;
     //force -= 0.0000001f * relPos / length(relPos);// *-1 * force_mag;
+
 
     force.z = 0.0f;
     return force;
@@ -366,8 +400,10 @@ __device__ float3 collideCell(int3 gridPos, uint index, float3 pos, float3 vel,
 }
 
 __device__ float4 velocityToColor(float3 vel) {
-    if (length(vel) > 0.001) {
-        return make_float4(vel.x*vel.x*1000*1000, 1.0, 0.0, 1.0);
+    if (length(vel) > 0.000) {
+        float mag = vel.x * vel.x + vel.y * vel.y;
+        mag *= 1000 * 1000;
+        return make_float4(mag, 1.0 - mag, 0.0, 1.0);
     }
     else {
         return make_float4(0.0, 0.5, 0.0, 1.0);
@@ -399,11 +435,12 @@ __global__ void collideD(
     for (int y = -1* neighborDist; y <= neighborDist; y++) {
       for (int x = -1 * neighborDist; x <= neighborDist; x++) {
           if (gridPos.x == 10 || gridPos.y == 5) {
-              continue;
+              //continue;
           }
         int3 neighbourPos = gridPos + make_int3(x, y, z);
         force += collideCell(neighbourPos, index, pos, vel, oldPos, oldVel,
                              cellStart, cellEnd);
+        force -= pos * 0.000001; // Center gravity
       }
     }
   }

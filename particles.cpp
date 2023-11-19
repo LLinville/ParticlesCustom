@@ -71,8 +71,8 @@
 #define MAX_EPSILON_ERROR 5.00f
 #define THRESHOLD 0.30f
 
-#define GRID_SIZE 256
-#define NUM_PARTICLES 16384 * 2
+#define GRID_SIZE 32
+#define NUM_PARTICLES 1024 * 4;
 
 const uint width = 640, height = 480;
 
@@ -83,7 +83,7 @@ float camera_trans[] = {0, 0, -3};
 float camera_rot[] = {0, 0, 0};
 float camera_trans_lag[] = {0, 0, -3};
 float camera_rot_lag[] = {0, 0, 0};
-const float inertia = 0.1f;
+const float inertia = 0.01f;
 ParticleRenderer::DisplayMode displayMode = ParticleRenderer::PARTICLE_SPHERES;
 
 int mode = 0;
@@ -103,7 +103,7 @@ uint3 gridSize;
 int numIterations = 0;  // run until exit
 
 // simulation parameters
-float timestep = 0.5f;
+float timestep = 0.05f;
 float damping = 1.00f;
 float gravity = 0.0000f;
 int iterations = 1;
@@ -114,7 +114,7 @@ float collideSpring = 0.5f;
 float collideDamping = 0.02f;
 ;
 float collideShear = 0.1f;
-float collideAttraction = 0.0f;
+float collideAttraction = 0.001f;
 
 ParticleSystem *psystem = 0;
 
@@ -264,7 +264,7 @@ void display() {
     psystem->setCollideShear(collideShear);
     psystem->setCollideAttraction(collideAttraction);
        
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 5; i++) {
         psystem->update(timestep);
     }
 
@@ -282,8 +282,8 @@ void display() {
   glLoadIdentity();
 
   for (int c = 0; c < 3; ++c) {
-    camera_trans_lag[c] += (camera_trans[c] - camera_trans_lag[c]) * inertia;
-    camera_rot_lag[c] += (camera_rot[c] - camera_rot_lag[c]) * inertia;
+      camera_trans_lag[c] += (camera_trans[c] - camera_trans_lag[c]) * inertia;
+      camera_rot_lag[c] += (camera_rot[c] - camera_rot_lag[c]) * inertia;
   }
 
   glTranslatef(camera_trans_lag[0], camera_trans_lag[1], camera_trans_lag[2]);
@@ -415,7 +415,7 @@ void motion(int x, int y) {
   dx = (float)(x - ox);
   dy = (float)(y - oy);
 
-  if (displaySliders) {
+  if (displaySliders || true) {
     if (params->Motion(x, y)) {
       ox = x;
       oy = y;
@@ -536,11 +536,14 @@ void key(unsigned char key, int /*x*/, int /*y*/) {
       psystem->reset(ParticleSystem::CONFIG_RANDOM);
       break;
 
+    case '4':
+        psystem->reset(ParticleSystem::CONFIG_TARGET);
+
     case '3':
       addSphere();
       break;
 
-    case '4': {
+    case 's': {
       // shoot ball from camera
       float pr = psystem->getParticleRadius();
       float vel[4], velw[4], pos[4], posw[4];
@@ -611,7 +614,7 @@ void initParams() {
     collideSpring = 0.0f;
     collideDamping = 0.0f;
     collideShear = 0.0f;
-    collideAttraction = 0.0f;
+    collideAttraction = 0.001f;
   } else {
     // create a new parameter list
     params = new ParamListGL("misc");
@@ -641,6 +644,7 @@ void initMenus() {
   glutAddMenuEntry("Reset block [1]", '1');
   glutAddMenuEntry("Reset random [2]", '2');
   glutAddMenuEntry("Add sphere [3]", '3');
+  glutAddMenuEntry("Reset Target [4]", '4');
   glutAddMenuEntry("View mode [v]", 'v');
   glutAddMenuEntry("Move cursor mode [m]", 'm');
   glutAddMenuEntry("Toggle point rendering [p]", 'p');

@@ -43,8 +43,8 @@
 ParticleRenderer::ParticleRenderer()
     : m_pos(0),
       m_numParticles(0),
-      m_pointSize(1.0f),
-      m_particleRadius(0.125f * 0.75f),
+      m_pointSize(5.0f),
+      m_particleRadius(5.125f * 0.75f),
       m_program(0),
       m_vbo(0),
       m_colorVbo(0) {

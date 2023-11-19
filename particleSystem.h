@@ -41,7 +41,7 @@ class ParticleSystem {
   ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenGL);
   ~ParticleSystem();
 
-  enum ParticleConfig { CONFIG_RANDOM, CONFIG_GRID, _NUM_CONFIGS };
+  enum ParticleConfig { CONFIG_RANDOM, CONFIG_GRID, CONFIG_TARGET, _NUM_CONFIGS};
 
   enum ParticleArray {
     POSITION,

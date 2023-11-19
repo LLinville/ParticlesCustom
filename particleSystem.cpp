@@ -435,15 +435,24 @@ ParticleSystem::initGrid(uint *size, float spacing, float jitter, uint numPartic
 
                 if (i < numParticles)
                 {
-                    m_hPos[i*4] = (spacing * x) + m_params.particleRadius - 1.0f + (frand()*2.0f-1.0f)*jitter;
-                    m_hPos[i*4+1] = (spacing * y) + m_params.particleRadius - 1.0f + (frand()*2.0f-1.0f)*jitter;
-                    m_hPos[i * 4 + 2] = 0.0f; // (spacing * z) + m_params.particleRadius - 1.0f + (frand() * 2.0f - 1.0f) * jitter;
-                    m_hPos[i*4+3] = 1.0f;
-
-                    m_hVel[i*4] = 0.0f;
-                    m_hVel[i*4+1] = 0.0f;
-                    m_hVel[i*4+2] = 0.0f;
-                    m_hVel[i*4+3] = 0.0f;
+                    //m_hPos[i*4] = (spacing * x) + m_params.particleRadius - 1.0f + (frand()*2.0f-1.0f)*jitter;
+                    //m_hPos[i*4+1] = (spacing * y) + m_params.particleRadius - 1.0f + (frand()*2.0f-1.0f)*jitter;
+                    //m_hPos[i * 4 + 2] = 0.0f; // (spacing * z) + m_params.particleRadius - 1.0f + (frand() * 2.0f - 1.0f) * jitter;
+                    //m_hPos[i*4+3] = 1.0f;
+                    
+                    if (i == 0) {
+                        m_hVel[i * 4] = 0.001f;
+                        m_hVel[i * 4 + 1] = 0.001f;
+                        m_hVel[i * 4 + 2] = 0.001f;
+                        m_hVel[i * 4 + 3] = 0.001f;
+                    }
+                    else {
+                        m_hVel[i*4] = 0.0f;
+                        m_hVel[i*4+1] = 0.0f;
+                        m_hVel[i*4+2] = 0.0f;
+                        m_hVel[i*4+3] = 0.0f;
+                    }
+                    
                 }
             }
         }
@@ -466,11 +475,18 @@ ParticleSystem::reset(ParticleConfig config)
                     point[0] = frand();
                     point[1] = frand();
                     point[2] = frand();
-                    m_hPos[p++] = 2 * (point[0] - 0.5f);
-                    m_hPos[p++] = 2 * (point[1] - 0.5f);
+                    m_hPos[p++] = 1.5 * (point[0] - 0.5f);
+                    m_hPos[p++] = 1.5 * (point[1] - 0.5f);
                     m_hPos[p++] = 0.0f; // 2 * (point[2] - 0.5f);
                     m_hPos[p++] = 3.0f; // radius
-                    m_hVel[v++] = 0.0f;
+
+                    if (i != 0) {
+                        m_hVel[v++] = 0.001f;
+                    }
+                    else {
+                        m_hVel[v++] = 0.0f;
+                    }
+                    
                     m_hVel[v++] = 0.0f;
                     m_hVel[v++] = 0.0f;
                     m_hVel[v++] = 0.0f;
@@ -488,6 +504,11 @@ ParticleSystem::reset(ParticleConfig config)
                 initGrid(gridSize, m_params.particleRadius*2.0f, jitter, m_numParticles);
             }
             break;
+
+        case CONFIG_TARGET:
+        {
+
+        } break;
     }
 
     setArray(POSITION, m_hPos, 0, m_numParticles);
