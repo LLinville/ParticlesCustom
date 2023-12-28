@@ -71,17 +71,17 @@
 #define MAX_EPSILON_ERROR 5.00f
 #define THRESHOLD 0.30f
 
-#define GRID_SIZE 32
-#define NUM_PARTICLES 1024 * 4;
+#define GRID_SIZE 1024
+#define NUM_PARTICLES 1 * 1024;
 
 const uint width = 640, height = 480;
 
 // view params
 int ox, oy;
 int buttonState = 0;
-float camera_trans[] = {0, 0, -3};
+float camera_trans[] = {0, 0, -1};
 float camera_rot[] = {0, 0, 0};
-float camera_trans_lag[] = {0, 0, -3};
+float camera_trans_lag[] = {0, 0, -1};
 float camera_rot_lag[] = {0, 0, 0};
 const float inertia = 0.01f;
 ParticleRenderer::DisplayMode displayMode = ParticleRenderer::PARTICLE_SPHERES;
@@ -264,7 +264,8 @@ void display() {
     psystem->setCollideShear(collideShear);
     psystem->setCollideAttraction(collideAttraction);
        
-    for (int i = 0; i < 5; i++) {
+    // Steps
+    for (int i = 0; i < 1; i++) {
         psystem->update(timestep);
     }
 
@@ -435,8 +436,8 @@ void motion(int x, int y) {
         camera_trans[1] -= dy / 100.0f;
       } else if (buttonState & 1) {
         // left = rotate
-        camera_rot[0] += dy / 5.0f;
-        camera_rot[1] += dx / 5.0f;
+        //camera_rot[0] += dy / 5.0f;/*
+        //camera_rot[1] += dx / 5.0f;*/
       }
 
       break;
@@ -623,7 +624,7 @@ void initParams() {
     params->AddParam(
         new Param<float>("damping", damping, 0.0f, 1.0f, 0.001f, &damping));
     params->AddParam(
-        new Param<float>("gravity", gravity, 0.0f, 0.001f, 0.0001f, &gravity));
+        new Param<float>("gravity", gravity, 0.0f, 0.000f, 0.0000f, &gravity));
     params->AddParam(new Param<int>("ball radius", ballr, 1, 20, 1, &ballr));
 
     params->AddParam(new Param<float>("collide spring", collideSpring, 0.0f,

@@ -75,7 +75,7 @@ ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenG
     m_params.attraction = 0.0f;
     m_params.boundaryDamping = -0.9999f;
 
-    m_params.gravity = make_float3(0.0f, -0.0003f, 0.0f);
+    m_params.gravity = make_float3(0.0f, -0.0000f, 0.0f);
     m_params.globalDamping = 1.0f;
 
     _initialize(numParticles);
@@ -480,16 +480,17 @@ ParticleSystem::reset(ParticleConfig config)
                     m_hPos[p++] = 0.0f; // 2 * (point[2] - 0.5f);
                     m_hPos[p++] = 3.0f; // radius
 
-                    if (i != 0) {
-                        m_hVel[v++] = 0.001f;
+                    /*if (i != 0) {
+                        m_hVel[v++] = 0.000f;
                     }
                     else {
                         m_hVel[v++] = 0.0f;
-                    }
+                    }*/
                     
-                    m_hVel[v++] = 0.0f;
-                    m_hVel[v++] = 0.0f;
-                    m_hVel[v++] = 0.0f;
+                    m_hVel[v++] = 0.0;// * frand() * 0.001 - 0.0005;
+                    m_hVel[v++] = 0.0;// * frand() * 0.001 - 0.0005;
+                    m_hVel[v++] = 0.0;// * frand() * 0.000;
+                    m_hVel[v++] = 0.0;
                 }
             }
             break;

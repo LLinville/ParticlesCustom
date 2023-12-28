@@ -116,7 +116,7 @@ __device__ int3 calcGridPos(float3 p) {
   int3 gridPos;
   gridPos.x = floorf((p.x - params.worldOrigin.x) / params.cellSize.x);
   gridPos.y = floorf((p.y - params.worldOrigin.y) / params.cellSize.y);
-  gridPos.z = floorf((p.z - params.worldOrigin.z) / params.cellSize.z);
+  gridPos.z = 0;                                 // floorf((p.z - params.worldOrigin.z) / params.cellSize.z);
   return gridPos;
 }
 
@@ -249,7 +249,8 @@ __global__ void reorderDataAndFindCellStartD(
 //  return force;
 //}
 
-__device__ float forceMag_lj(float dist) {
+__device__ float forceMag_lj(float dist)
+{
     float epsilon = 0.00000001f;
     dist += epsilon;
     float dist2 = dist * dist;
@@ -261,6 +262,7 @@ __device__ float forceMag_lj(float dist) {
 
 
 //https://www.desmos.com/calculator/vjgbhagq9c
+//https://www.desmos.com/calculator/ziurgjgunh
 __device__ float forceMag_lj_from_potential(float dist) {
     /*float a = 0.1;
     float b = 0.79;
@@ -270,12 +272,15 @@ __device__ float forceMag_lj_from_potential(float dist) {
     float g = 3.7;
     float cf = c * f;
     float dg = d * g;*/
-    const float a = 0.1;
-    const float b = 0.21;
-    const float c = 4;
-    const float d = 4;
-    const float f = 1.1;
-    const float g = 1.8;
+    if (dist < 1.0) {
+        return -1.0 / dist;
+    }
+    const float a = 0.4;
+    const float b = 0.6;
+    const float c = 8;
+    const float d = 8;
+    const float f = 8.3;
+    const float g = 10.8;
     const float cf = c * f;
     const float dg = d * g;
 
@@ -324,7 +329,7 @@ __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
     // calculate relative position
     float3 relPos = posB - posA;
 
-    float dist = length(relPos) * 0.1;
+    float dist = length(relPos) * 10;
     //float dist2 = dist * dist;
     //float dist4 = dist2 * dist2;
     //float dist5 = dist4 * dist;
@@ -345,7 +350,7 @@ __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
                       (a * c * dist4) / ((dist5 + g) * (dist5 + g));*/
 
     //float force_mag = forceMag_lj(dist);
-    float force_mag = forceMag_lj_from_potential(dist * 400);
+    float force_mag = forceMag_lj_from_potential(dist);
     //if (dist < attraction * 0.001) {
     //    force_mag = -0.01;
     //}
@@ -359,12 +364,12 @@ __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
     //float force_mag = 8 / (dist2 + 0.5) - 5 / ((-1.1 * dist + 0.5) * (-1.1 * dist + 0.5) + 0.5);
     //float force_mag = -1 * 0.4
     force += relPos / length(relPos);
-    force *= 0.1 * attraction * force_mag;
+    force *= 0.01 * attraction * force_mag;
     //force -= 0.0000001f * relPos / length(relPos);// *-1 * force_mag;
 
 
     force.z = 0.0f;
-    return force;
+    return 0.1*force;
 }
 
 // collide a particle against all other particles in a given cell
@@ -440,7 +445,7 @@ __global__ void collideD(
         int3 neighbourPos = gridPos + make_int3(x, y, z);
         force += collideCell(neighbourPos, index, pos, vel, oldPos, oldVel,
                              cellStart, cellEnd);
-        force -= pos * 0.000001; // Center gravity
+        //force -= pos * 0.000001; // Center gravity
       }
     }
   }
