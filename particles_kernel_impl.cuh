@@ -273,7 +273,7 @@ __device__ float forceMag_lj_from_potential(float dist) {
     float cf = c * f;
     float dg = d * g;*/
     if (dist < 1.0) {
-        return -1.0 / dist;
+        return 50.0 * dist - 50;
     }
     const float a = 0.4;
     const float b = 0.6;
@@ -323,13 +323,13 @@ __device__ float forceMag_custom_peak(float dist) {
 // collide two spheres using DEM method
 __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
     float3 velB, float radiusA, float radiusB,
-    float attraction) {
+    float attraction, float colorScale) {
 
 
     // calculate relative position
     float3 relPos = posB - posA;
 
-    float dist = length(relPos) * 10;
+    float dist = length(relPos);
     //float dist2 = dist * dist;
     //float dist4 = dist2 * dist2;
     //float dist5 = dist4 * dist;
@@ -350,7 +350,7 @@ __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
                       (a * c * dist4) / ((dist5 + g) * (dist5 + g));*/
 
     //float force_mag = forceMag_lj(dist);
-    float force_mag = forceMag_lj_from_potential(dist);
+    float force_mag = forceMag_lj_from_potential(dist * 100);
     //if (dist < attraction * 0.001) {
     //    force_mag = -0.01;
     //}
@@ -363,7 +363,7 @@ __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
 
     //float force_mag = 8 / (dist2 + 0.5) - 5 / ((-1.1 * dist + 0.5) * (-1.1 * dist + 0.5) + 0.5);
     //float force_mag = -1 * 0.4
-    force += relPos / length(relPos);
+    force += relPos / dist;
     force *= 0.01 * attraction * force_mag;
     //force -= 0.0000001f * relPos / length(relPos);// *-1 * force_mag;
 
@@ -374,34 +374,66 @@ __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
 
 // collide a particle against all other particles in a given cell
 __device__ float3 collideCell(int3 gridPos, uint index, float3 pos, float3 vel,
-                              float4 *oldPos, float4 *oldVel, uint *cellStart,
-                              uint *cellEnd) {
-  uint gridHash = calcGridHash(gridPos);
+    float4* oldPos, float4* oldVel, uint* cellStart,
+    uint* cellEnd) {
+    uint gridHash = calcGridHash(gridPos);
 
-  // get start of bucket for this cell
-  uint startIndex = cellStart[gridHash];
+    // get start of bucket for this cell
+    uint startIndex = cellStart[gridHash];
 
-  float3 force = make_float3(0.0f);
+    float3 force = make_float3(0.0f);
 
-  if (startIndex != 0xffffffff)  // cell is not empty
-  {
-    // iterate over particles in this cell
-    uint endIndex = cellEnd[gridHash];
+    if (startIndex != 0xffffffff)  // cell is not empty
+    {
+        // iterate over particles in this cell
+        uint endIndex = cellEnd[gridHash];
 
-    for (uint j = startIndex; j < endIndex; j++) {
-      if (j != index)  // check not colliding with self
-      {
-        float3 pos2 = make_float3(oldPos[j]);
-        float3 vel2 = make_float3(oldVel[j]);
+        for (uint j = startIndex; j < endIndex; j++) {
+            if (j != index)  // check not colliding with self
+            {
+                float3 pos2 = make_float3(oldPos[j]);
+                float3 vel2 = make_float3(oldVel[j]);
 
-        // collide two spheres
-        force += collideSpheres(pos, pos2, vel, vel2, params.particleRadius,
-                                params.particleRadius, params.attraction);
-      }
+                // collide two spheres
+                force += collideSpheres(pos, pos2, vel, vel2, params.particleRadius,
+                    params.particleRadius, params.attraction, params.colorScale);
+            }
+        }
     }
-  }
 
-  return force;
+    return force;
+}
+
+// Fourier transform of partial data
+__device__ float3 symmetryCell(int3 gridPos, uint index, float3 pos, float3 vel,
+    float4* oldPos, float4* oldVel, uint* cellStart,
+    uint* cellEnd) {
+    uint gridHash = calcGridHash(gridPos);
+
+    // get start of bucket for this cell
+    uint startIndex = cellStart[gridHash];
+
+    float3 force = make_float3(0.0f);
+
+    if (startIndex != 0xffffffff)  // cell is not empty
+    {
+        // iterate over particles in this cell
+        uint endIndex = cellEnd[gridHash];
+
+        for (uint j = startIndex; j < endIndex; j++) {
+            if (j != index)  // check not colliding with self
+            {
+                float3 pos2 = make_float3(oldPos[j]);
+                float3 vel2 = make_float3(oldVel[j]);
+
+                // collide two spheres
+                force += collideSpheres(pos, pos2, vel, vel2, params.particleRadius,
+                    params.particleRadius, params.attraction, params.colorScale);
+            }
+        }
+    }
+
+    return force;
 }
 
 __device__ float4 velocityToColor(float3 vel) {
@@ -421,7 +453,9 @@ __global__ void collideD(
     float4 *oldPos,           // input: sorted positions
     float4 *oldVel,           // input: sorted velocities
     uint *gridParticleIndex,  // input: sorted particle indices
-    uint *cellStart, uint *cellEnd, uint numParticles) {
+    uint *cellStart, uint *cellEnd, uint numParticles,
+    float colorScale
+) {
   uint index = __mul24(blockIdx.x, blockDim.x) + threadIdx.x;
 
   if (index >= numParticles) return;
@@ -445,7 +479,7 @@ __global__ void collideD(
         int3 neighbourPos = gridPos + make_int3(x, y, z);
         force += collideCell(neighbourPos, index, pos, vel, oldPos, oldVel,
                              cellStart, cellEnd);
-        //force -= pos * 0.000001; // Center gravity
+        force -= pos * 0.002; // Center gravity
       }
     }
   }
@@ -457,8 +491,8 @@ __global__ void collideD(
 
   // write new velocity back to original unsorted location
   uint originalIndex = gridParticleIndex[index];
-  newVel[originalIndex] = make_float4(vel + force, 0.0f);
-  newColor[originalIndex] = velocityToColor(vel);
+  newVel[originalIndex] = make_float4(vel * 1.0 + force, 0.0f);
+  newColor[originalIndex] = velocityToColor(vel * colorScale);
 }
 
 #endif

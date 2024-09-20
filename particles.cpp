@@ -71,8 +71,8 @@
 #define MAX_EPSILON_ERROR 5.00f
 #define THRESHOLD 0.30f
 
-#define GRID_SIZE 1024
-#define NUM_PARTICLES 1 * 1024;
+#define GRID_SIZE 128
+#define NUM_PARTICLES 64 * 1024 * 1;
 
 const uint width = 640, height = 480;
 
@@ -106,15 +106,15 @@ int numIterations = 0;  // run until exit
 float timestep = 0.05f;
 float damping = 1.00f;
 float gravity = 0.0000f;
+
 int iterations = 1;
 int ballr = 10;
 
-float collideSpring = 0.5f;
-;
-float collideDamping = 0.02f;
-;
+float collideSpring = 0.5f;;
+float collideDamping = 0.02f;;
 float collideShear = 0.1f;
 float collideAttraction = 0.001f;
+float colorScale = 0.1f;
 
 ParticleSystem *psystem = 0;
 
@@ -263,6 +263,7 @@ void display() {
     psystem->setCollideDamping(collideDamping);
     psystem->setCollideShear(collideShear);
     psystem->setCollideAttraction(collideAttraction);
+    psystem->setColorScale(colorScale);
        
     // Steps
     for (int i = 0; i < 1; i++) {
@@ -616,6 +617,7 @@ void initParams() {
     collideDamping = 0.0f;
     collideShear = 0.0f;
     collideAttraction = 0.001f;
+    colorScale = 0.1f;
   } else {
     // create a new parameter list
     params = new ParamListGL("misc");
@@ -635,6 +637,8 @@ void initParams() {
                                       0.001f, &collideShear));
     params->AddParam(new Param<float>("collide attract", collideAttraction,
                                       0.0f, 0.1f, 0.1f, &collideAttraction));
+    params->AddParam(new Param<float>("color scale", colorScale,
+                                      0.0f, 5.0f, 0.001f, &colorScale));
   }
 }
 

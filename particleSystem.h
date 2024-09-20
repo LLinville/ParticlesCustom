@@ -74,6 +74,7 @@ class ParticleSystem {
   void setCollideDamping(float x) { m_params.damping = x; }
   void setCollideShear(float x) { m_params.shear = x; }
   void setCollideAttraction(float x) { m_params.attraction = x; }
+  void setColorScale(float x) { m_params.colorScale = x; }
 
   void setColliderPos(float3 x) { m_params.colliderPos = x; }
 

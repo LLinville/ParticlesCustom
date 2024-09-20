@@ -1,0 +1,25 @@
+﻿
+
+
+
+Improvement steps
+
+
+Add color to particles based on velocity
+
+Add texture to background
+
+Sum particles to texture
+
+Particle movement based on texture
+
+FFT on texture
+
+Use FFT for gravity
+
+
+
+
+
+
+

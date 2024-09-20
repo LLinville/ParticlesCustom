@@ -60,7 +60,7 @@ void reorderDataAndFindCellStart(uint *cellStart, uint *cellEnd,
 
 void collide(float *newVel, float *newColor, float *sortedPos, float *sortedVel,
              uint *gridParticleIndex, uint *cellStart, uint *cellEnd,
-             uint numParticles, uint numCells);
+             uint numParticles, uint numCells, float colorScale);
 
 void sortParticles(uint *dGridParticleHash, uint *dGridParticleIndex,
                    uint numParticles);

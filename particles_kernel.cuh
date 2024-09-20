@@ -52,6 +52,7 @@ struct SimParams {
   float damping;
   float shear;
   float attraction;
+  float colorScale;
   float boundaryDamping;
 };
 

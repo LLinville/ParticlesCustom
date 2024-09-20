@@ -179,7 +179,7 @@ void reorderDataAndFindCellStart(uint *cellStart, uint *cellEnd,
 
 void collide(float *newVel, float *newColor, float *sortedPos, float *sortedVel,
              uint *gridParticleIndex, uint *cellStart, uint *cellEnd,
-             uint numParticles, uint numCells) {
+             uint numParticles, uint numCells, float colorScale) {
   // thread per particle
   uint numThreads, numBlocks;
   computeGridSize(numParticles, 64, numBlocks, numThreads);
@@ -187,7 +187,7 @@ void collide(float *newVel, float *newColor, float *sortedPos, float *sortedVel,
   // execute the kernel
   collideD<<<numBlocks, numThreads>>>((float4 *)newVel, (float4 *) newColor, (float4 *)sortedPos,
                                       (float4 *)sortedVel, gridParticleIndex,
-                                      cellStart, cellEnd, numParticles);
+                                      cellStart, cellEnd, numParticles, colorScale);
 
   // check if kernel invocation generated an error
   getLastCudaError("Kernel execution failed");

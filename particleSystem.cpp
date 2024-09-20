@@ -29,6 +29,9 @@
 #include <cstdlib>
 #include <algorithm>
 
+#include <iostream>
+#include <fstream>
+
 #ifndef CUDART_PI_F
 #define CUDART_PI_F         3.141592654f
 #endif
@@ -73,6 +76,7 @@ ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenG
     m_params.damping = 0.02f;
     m_params.shear = 0.1f;
     m_params.attraction = 0.0f;
+    m_params.colorScale = 0.1f;
     m_params.boundaryDamping = -0.9999f;
 
     m_params.gravity = make_float3(0.0f, -0.0000f, 0.0f);
@@ -306,7 +310,9 @@ ParticleSystem::update(float deltaTime)
         m_dCellStart,
         m_dCellEnd,
         m_numParticles,
-        m_numGridCells);
+        m_numGridCells,
+        m_params.colorScale
+    );
 
     // note: do unmap at end here to avoid unnecessary graphics/CUDA context switch
     if (m_bUseOpenGL)
@@ -348,12 +354,24 @@ ParticleSystem::dumpParticles(uint start, uint count)
     copyArrayFromDevice(m_hPos, 0, &m_cuda_posvbo_resource, sizeof(float)*4*count);
     copyArrayFromDevice(m_hVel, m_dVel, 0, sizeof(float)*4*count);
 
+    std::ofstream particleDumpFile;
+    particleDumpFile.open("particle_dump.txt");
+    
+    
+    
     for (uint i=start; i<start+count; i++)
     {
-        //        printf("%d: ", i);
-        printf("pos: (%.4f, %.4f, %.4f, %.4f)\n", m_hPos[i*4+0], m_hPos[i*4+1], m_hPos[i*4+2], m_hPos[i*4+3]);
-        printf("vel: (%.4f, %.4f, %.4f, %.4f)\n", m_hVel[i*4+0], m_hVel[i*4+1], m_hVel[i*4+2], m_hVel[i*4+3]);
+        if (i % 100 == 0) {
+            printf("Saving %d / %d", i);
+        }
+        
+        particleDumpFile << "Particle " << i << "\n";
+        particleDumpFile << "pos: (" << m_hPos[i * 4 + 0] << "," << m_hPos[i * 4 + 1] << "," << m_hPos[i * 4 + 2] << "," << m_hPos[i * 4 + 3] << ")\n";
+        particleDumpFile << "vel: (" << m_hVel[i * 4 + 0] << "," << m_hVel[i * 4 + 1] << "," << m_hVel[i * 4 + 2] << "," << m_hVel[i * 4 + 3] << ")\n";
+        //printf("pos: (%.4f, %.4f, %.4f, %.4f)\n", m_hPos[i*4+0], m_hPos[i*4+1], m_hPos[i*4+2], m_hPos[i*4+3]);
+        //printf("vel: (%.4f, %.4f, %.4f, %.4f)\n", m_hVel[i*4+0], m_hVel[i*4+1], m_hVel[i*4+2], m_hVel[i*4+3]);
     }
+    particleDumpFile.close();
 }
 
 float *
