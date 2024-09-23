@@ -111,6 +111,11 @@ struct integrate_functor {
   }
 };
 
+
+__device__ float3 complexMultiply(float3 a, float3 b) {
+    return make_float3(a.x*b.x - a.y*b.y, a.x*b.y + a.y * b.x, 0);
+}
+
 // calculate position in uniform grid
 __device__ int3 calcGridPos(float3 p) {
   int3 gridPos;
@@ -322,14 +327,28 @@ __device__ float forceMag_custom_peak(float dist) {
 
 // collide two spheres using DEM method
 __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
-    float3 velB, float radiusA, float radiusB,
+    float3 velB, float* nNeighbors, float4* neighborSymmetry, float radiusA, float radiusB,
     float attraction, float colorScale) {
 
 
     // calculate relative position
     float3 relPos = posB - posA;
 
-    float dist = length(relPos);
+    float dist2 = dot(relPos, relPos);
+    float dist = sqrtf(dist2);
+
+    //if (dist > 0.01) { return make_float3(0, 0, 0); }
+
+    if (dist < 0.01f) {
+        *nNeighbors += 1;
+        float3 normalizedRelPos = relPos / dist;
+        float3 norm2RelPos = complexMultiply(normalizedRelPos, normalizedRelPos);
+        float3 norm4RelPos = complexMultiply(norm2RelPos, norm2RelPos);
+        float3 norm6RelPos = complexMultiply(norm4RelPos, norm2RelPos);
+        float3 rotatedPos = complexMultiply(relPos, norm6RelPos);
+        *neighborSymmetry += make_float4(rotatedPos.x, rotatedPos.y, rotatedPos.x * rotatedPos.x, rotatedPos.y * rotatedPos.y);
+    }
+
     //float dist2 = dist * dist;
     //float dist4 = dist2 * dist2;
     //float dist5 = dist4 * dist;
@@ -375,7 +394,7 @@ __device__ float3 collideSpheres(float3 posA, float3 posB, float3 velA,
 // collide a particle against all other particles in a given cell
 __device__ float3 collideCell(int3 gridPos, uint index, float3 pos, float3 vel,
     float4* oldPos, float4* oldVel, uint* cellStart,
-    uint* cellEnd) {
+    uint* cellEnd, float* nNeighbors, float4* neighborSymmetry) {
     uint gridHash = calcGridHash(gridPos);
 
     // get start of bucket for this cell
@@ -395,7 +414,7 @@ __device__ float3 collideCell(int3 gridPos, uint index, float3 pos, float3 vel,
                 float3 vel2 = make_float3(oldVel[j]);
 
                 // collide two spheres
-                force += collideSpheres(pos, pos2, vel, vel2, params.particleRadius,
+                force += collideSpheres(pos, pos2, vel, vel2, nNeighbors, neighborSymmetry, params.particleRadius,
                     params.particleRadius, params.attraction, params.colorScale);
             }
         }
@@ -404,37 +423,37 @@ __device__ float3 collideCell(int3 gridPos, uint index, float3 pos, float3 vel,
     return force;
 }
 
-// Fourier transform of partial data
-__device__ float3 symmetryCell(int3 gridPos, uint index, float3 pos, float3 vel,
-    float4* oldPos, float4* oldVel, uint* cellStart,
-    uint* cellEnd) {
-    uint gridHash = calcGridHash(gridPos);
-
-    // get start of bucket for this cell
-    uint startIndex = cellStart[gridHash];
-
-    float3 force = make_float3(0.0f);
-
-    if (startIndex != 0xffffffff)  // cell is not empty
-    {
-        // iterate over particles in this cell
-        uint endIndex = cellEnd[gridHash];
-
-        for (uint j = startIndex; j < endIndex; j++) {
-            if (j != index)  // check not colliding with self
-            {
-                float3 pos2 = make_float3(oldPos[j]);
-                float3 vel2 = make_float3(oldVel[j]);
-
-                // collide two spheres
-                force += collideSpheres(pos, pos2, vel, vel2, params.particleRadius,
-                    params.particleRadius, params.attraction, params.colorScale);
-            }
-        }
-    }
-
-    return force;
-}
+//// Fourier transform of partial data
+//__device__ float3 symmetryCell(int3 gridPos, uint index, float3 pos, float3 vel,
+//    float4* oldPos, float4* oldVel, uint* cellStart,
+//    uint* cellEnd) {
+//    uint gridHash = calcGridHash(gridPos);
+//
+//    // get start of bucket for this cell
+//    uint startIndex = cellStart[gridHash];
+//
+//    float3 force = make_float3(0.0f);
+//
+//    if (startIndex != 0xffffffff)  // cell is not empty
+//    {
+//        // iterate over particles in this cell
+//        uint endIndex = cellEnd[gridHash];
+//
+//        for (uint j = startIndex; j < endIndex; j++) {
+//            if (j != index)  // check not colliding with self
+//            {
+//                float3 pos2 = make_float3(oldPos[j]);
+//                float3 vel2 = make_float3(oldVel[j]);
+//
+//                // collide two spheres
+//                force += collideSpheres(pos, pos2, vel, vel2, params.particleRadius,
+//                    params.particleRadius, params.attraction, params.colorScale);
+//            }
+//        }
+//    }
+//
+//    return force;
+//}
 
 __device__ float4 velocityToColor(float3 vel) {
     if (length(vel) > 0.000) {
@@ -469,17 +488,22 @@ __global__ void collideD(
 
   // examine neighbouring cells
   float3 force = make_float3(0.0f);
+  
+  // Mean position of rotated neighbors
+  float4 neighborSymmetry = make_float4(0.0f);
+  float nNeighbors = 0.0f;
+
   int neighborDist = 1;
   for (int z = -1; z <= 1; z++) {
     for (int y = -1* neighborDist; y <= neighborDist; y++) {
       for (int x = -1 * neighborDist; x <= neighborDist; x++) {
           if (gridPos.x == 10 || gridPos.y == 5) {
-              //continue;
+              // continue;
           }
         int3 neighbourPos = gridPos + make_int3(x, y, z);
         force += collideCell(neighbourPos, index, pos, vel, oldPos, oldVel,
-                             cellStart, cellEnd);
-        force -= pos * 0.002; // Center gravity
+                             cellStart, cellEnd, &nNeighbors, &neighborSymmetry);
+        force -= pos * 0.00000002; // Center gravity
       }
     }
   }
@@ -491,8 +515,27 @@ __global__ void collideD(
 
   // write new velocity back to original unsorted location
   uint originalIndex = gridParticleIndex[index];
-  newVel[originalIndex] = make_float4(vel * 1.0 + force, 0.0f);
+  newVel[originalIndex] = make_float4(vel * 1.0f + force, 0.0f);
   newColor[originalIndex] = velocityToColor(vel * colorScale);
+  if (originalIndex % 2 == 3) {
+      newColor[originalIndex] = make_float4(1.0f, 1.0f, 1.0f, 1.0f);
+  } else {
+      float mag = 0; // length(make_float2(neighborSymmetry.x, neighborSymmetry.y)) / neighborSymmetry.z * 100.0f * colorScale;
+      float4 ns = neighborSymmetry;
+      float xVariance = (ns.z - ns.x * ns.x * nNeighbors) / (nNeighbors - 1);
+      float yVariance = (ns.w - ns.y * ns.y * nNeighbors) / (nNeighbors - 1);
+      mag = xVariance + yVariance;
+      mag *= 10000 * colorScale;
+
+      //printf("%f", mag);
+
+      if (nNeighbors > 5.5 && nNeighbors < 6.5) {
+          newColor[originalIndex] = make_float4(1,1,1,1);
+      } else {
+          newColor[originalIndex] = make_float4(mag, 1.0f - mag, 0.0f, 1.0f);
+      }
+      
+  }
 }
 
 #endif
